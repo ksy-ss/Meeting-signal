@@ -200,7 +200,7 @@
       // -----------------------------------------------------------
       // [2] Firebase 설정 (사장님 키 유지)
       // -----------------------------------------------------------
-      const firebaseConfig = {
+ const firebaseConfig = {
     apiKey: "AIzaSyB6WjGUEn0fEg_k4Yk15bhzAFDoo7RcqWg",
     authDomain: "want-log-v2.firebaseapp.com",
     databaseURL: "https://want-log-v2-default-rtdb.firebaseio.com",
@@ -209,6 +209,7 @@
     messagingSenderId: "142800647324",
     appId: "1:142800647324:web:e3100ec7b4daa8467ae959",
     measurementId: "G-HZ4HBQH697"
+  };
       
       if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
       const db = firebase.database();
@@ -493,4 +494,5 @@
       }
     </script>
   </body>
+
 </html>
