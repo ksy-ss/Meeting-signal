@@ -26,6 +26,15 @@
       .detail-row { display: flex; gap: 10px; margin-bottom: 5px; }
       .detail-col { flex: 1; }
 
+      /* [신규] 로고 및 풋터 스타일 */
+      .brand-header { text-align: center; margin-top: 20px; margin-bottom: 10px; }
+      .brand-logo { font-size: 24px; font-weight: 900; color: var(--main-color); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; letter-spacing: -0.5px; }
+      .brand-logo i { color: var(--accent-color); }
+      
+      .site-footer { margin-top: auto; padding: 30px 20px; background-color: #f9f9f9; border-top: 1px solid #eee; text-align: center; font-size: 11px; color: #aaa; line-height: 1.6; }
+      .site-footer strong { color: #888; font-weight: 700; display: block; margin-bottom: 5px; font-size: 12px; }
+      .site-footer a { color: #999; text-decoration: underline; }
+
       /* [신규] 성별/나이 선택용 스타일 (숨김 처리 가능) */
       #row-gender-age { display: none; } 
 
@@ -72,6 +81,12 @@
     <div class="container">
       
       <div id="view-home" class="view active">
+        <div class="brand-header">
+            <div class="brand-logo">
+                <i class="fas fa-signal"></i> <span>SIGNAL</span>
+            </div>
+        </div>
+
         <h1 id="ui-main-title">로딩중...</h1>
         <div id="cloud-area"><div style="text-align:center;color:#999;width:100%;margin-top:20px;">데이터 불러오는 중...</div></div>
         
@@ -80,6 +95,13 @@
         <button class="btn-text" onclick="loadDataFromFirebase()">새로고침</button>
         
         <div class="safety-notice">🔒 모든 시그널은 24시간 후 완전히 사라집니다.</div>
+        <div class="site-footer">
+            <strong>Signal Lab (시그널 랩)</strong>
+            문의: contact@signal.com<br>
+            이용약관 | 개인정보처리방침<br>
+            ⓒ 2025 Signal Project. All rights reserved.<br>
+            <span style="color:var(--main-color); opacity:0.7;">* 24시간 안심 데이터 소멸 시스템 작동 중</span>
+        </div>
       </div>
 
       <div id="view-input" class="view">
