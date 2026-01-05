@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WANT Service</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+      :root { --main-color: #6200ea; --accent-color: #ffd700; --bg-color: #f8f5ff; --text-color: #333; }
+      body { margin:0; padding:0; font-family:'Pretendard', sans-serif; background:#fff; color:var(--text-color); overflow-y:auto; }
+      .container { max-width:450px; margin:0 auto; padding:20px; min-height:100vh; display:flex; flex-direction:column; position: relative; }
+      .view { display:none; flex-direction:column; animation: fadeIn 0.3s ease-in-out; }
+      .view.active { display:flex; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+      
+      h1 { font-size:24px; font-weight:700; margin:40px 0 20px 0; line-height:1.4; word-break: keep-all; }
+      h1 span { color:var(--main-color); }
+      
+      .label { font-weight:700; margin-bottom:8px; display:block; font-size:14px; color:var(--text-color); margin-top: 15px; }
+      .input-field { width:100%; padding:12px; font-size:16px; border:1px solid #ddd; border-radius:8px; outline:none; background:#fff; box-sizing:border-box; transition:0.3s; }
+      .input-field:focus { border-color:var(--main-color); box-shadow: 0 0 0 2px rgba(98, 0, 234, 0.1); }
+      .detail-row { display: flex; gap: 10px; margin-bottom: 5px; }
+      .detail-col { flex: 1; }
+
+      /* [신규] 성별/나이 선택용 스타일 (숨김 처리 가능) */
+      #row-gender-age { display: none; } 
+
+      button { width:100%; padding:18px; font-size:16px; font-weight:700; border:none; border-radius:12px; cursor:pointer; margin-top:10px; transition: 0.2s; }
+      .btn-primary { background-color:var(--main-color); color:white; margin-top: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+      .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+      .btn-text { background-color:transparent; color:#999; margin-top:20px; }
+      .btn-stats { background-color:var(--bg-color); color:var(--main-color); margin-top:15px; font-size:14px; font-weight: 600; }
+
+      #cloud-area { margin-bottom:30px; display:flex; flex-wrap:wrap; gap:10px; justify-content: flex-start; }
+      .tag { background:var(--bg-color); padding:10px 16px; border-radius:24px; font-size:15px; color:var(--main-color); cursor:pointer; font-weight: 500; transition:0.2s; border: 1px solid transparent; }
+      .tag:hover { border-color:var(--main-color); background:white; }
+
+      .circle-container { position: relative; width: 160px; height: 160px; margin: 30px auto; display: flex; align-items: center; justify-content: center; }
+      .circle { width: 100%; height: 100%; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; background: white; transition: all 0.5s ease; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid #eee; }
+      .count-group { text-align: center; }
+      .count-label { font-size: 11px; color: #888; font-weight: 400; margin-bottom: 2px; }
+      .count-num { font-size: 36px; line-height: 1; color: var(--main-color); }
+      .divider { width: 30px; height: 1px; background: #ddd; margin: 8px auto; }
+      .room-stat { font-size: 13px; color: #555; font-weight: 700; }
+      .room-stat span { color: var(--main-color); }
+
+      .circle.scanning { border: 4px solid #eee; color: #999; }
+      .circle.scanning::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 4px solid transparent; border-top-color: var(--main-color); border-right-color: var(--main-color); animation: spin 1.5s linear infinite; }
+      .circle.result { border: 6px solid var(--main-color); background: var(--bg-color); }
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+
+      .chart-container { margin-bottom: 30px; padding: 15px; border: 1px solid #eee; border-radius: 12px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+      .chart-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; color: var(--main-color); text-align: center; }
+      
+      .chat-btn-yellow { display: block; width: 100%; padding: 15px; margin-bottom: 10px; background: linear-gradient(135deg, var(--accent-color), #fff9c4); color: #3c1e1e; border-radius: 12px; text-decoration: none; box-sizing: border-box; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; transition: transform 0.2s; }
+      .chat-btn-yellow:hover { transform: translateY(-2px); }
+      .chat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+      .dist-badge { background: rgba(255,255,255,0.7); padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+      .chat-info-sub { font-size: 12px; color: #555; }
+      .timer-badge { position: absolute; bottom: 15px; right: 15px; background: var(--main-color); color: #fff; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+      .stat-info { text-align: center; font-size: 11px; color: #999; margin-top: -20px; margin-bottom: 20px; }
+      
+      /* [신규] 안내 문구 강조 */
+      .safety-notice { text-align: center; font-size: 12px; color: #888; margin-top: 15px; background: #f0f0f0; padding: 10px; border-radius: 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      
+      <div id="view-home" class="view active">
+        <h1 id="ui-main-title">로딩중...</h1>
+        <div id="cloud-area"><div style="text-align:center;color:#999;width:100%;margin-top:20px;">데이터 불러오는 중...</div></div>
+        
+        <button id="ui-btn-input" class="btn-primary" onclick="goInput('')">입력하기</button>
+        <button id="ui-btn-stats" class="btn-stats" onclick="loadStats()">통계 보기</button> 
+        <button class="btn-text" onclick="loadDataFromFirebase()">새로고침</button>
+        
+        <div class="safety-notice">🔒 모든 시그널은 24시간 후 완전히 사라집니다.</div>
+      </div>
+
+      <div id="view-input" class="view">
+        <button class="btn-text" style="padding:0; margin:0 0 10px 0; text-align:left; width:auto;" onclick="goHome()">← 돌아가기</button>
+        
+        <label id="ui-label-keyword" class="label">키워드</label>
+        <input type="text" id="input-keyword" class="input-field" placeholder="">
+        
+        <div id="row-gender-age" class="detail-row">
+            <div class="detail-col">
+                <label class="label">성별</label>
+                <select id="input-gender" class="input-field">
+                    <option value="male">남성</option>
+                    <option value="female">여성</option>
+                </select>
+            </div>
+            <div class="detail-col">
+                <label class="label">연령대</label>
+                <select id="input-age" class="input-field">
+                    <option value="20s">20대</option>
+                    <option value="30s">30대</option>
+                    <option value="40s">40대</option>
+                    <option value="50s">50대+</option>
+                </select>
+            </div>
+        </div>
+
+        <label id="ui-label-type" class="label">방식</label>
+        <select id="input-type" class="input-field"></select>
+
+        <div class="detail-row">
+            <div class="detail-col">
+                <label id="ui-label-budget" class="label">비용</label>
+                <select id="input-budget" class="input-field"></select>
+            </div>
+            <div class="detail-col">
+                <label id="ui-label-time" class="label">시간</label>
+                <select id="input-time" class="input-field"></select>
+            </div>
+        </div>
+
+        <label class="label" id="ui-label-contact">오픈카톡/연락처 (선택)</label>
+        <input type="text" id="input-link" class="input-field" placeholder="https://open.kakao.com/...">
+        <label class="label">이메일 (선택)</label>
+        <input type="email" id="input-email" class="input-field" placeholder="매칭 알림용">
+        
+        <button id="ui-btn-submit" class="btn-primary" onclick="requestLocationAndSubmit()">신호 보내기</button>
+        <div style="text-align:center; font-size:11px; color:#999; margin-top:10px;">* 거리 계산을 위해 위치 권한이 필요합니다.</div>
+        <div style="height:50px;"></div>
+      </div>
+
+      <div id="view-result" class="view">
+        <h1>분석 결과</h1>
+        <div class="circle-container">
+            <div id="result-circle" class="circle scanning"><span style="font-size:20px;">SCAN</span></div>
+        </div>
+        <div class="stat-info">* 최근 3시간 내 입력 기준</div>
+        <p id="result-msg" style="text-align:center; color:#555; font-weight:bold; margin-bottom:5px;">탐색 중...</p>
+        <div id="chat-list-area"></div>
+        <button class="btn-primary" onclick="goHome()">처음으로 돌아가기</button>
+      </div>
+
+      <div id="view-stats" class="view">
+         <button class="btn-text" style="padding:0; margin:0 0 20px 0; text-align:left; width:auto;" onclick="goHome()">← 돌아가기</button>
+         <h1 id="ui-stat-title">트렌드 분석</h1>
+         <div class="chart-container">
+            <div id="ui-chart-title-1" class="chart-title">🔥 핫 키워드 Top 5</div>
+            <canvas id="chart-keyword"></canvas>
+         </div>
+         <div class="chart-container">
+            <div class="chart-title">🕒 시간대별 추이</div>
+            <canvas id="chart-time"></canvas>
+         </div>
+         <div class="chart-container">
+            <div class="chart-title">🧩 선호하는 방식</div>
+            <canvas id="chart-type" style="max-height: 250px;"></canvas>
+         </div>
+      </div>
+
+    </div>
+
+    <script>
+      // -----------------------------------------------------------
+      // [1] 앱 설정 영역 (여기에 features 추가됨!)
+      // -----------------------------------------------------------
+      
+      // ★★★ [주의] 이 부분을 각 앱에 맞는 CONFIG로 교체해야 합니다! ★★★
+      const APP_CONFIG = {
+          appName: "love_signal", // 앱 ID
+          
+          // [신규] 기능 스위치 (필요한 기능만 true로)
+          features: {
+              useGenderAge: true, // 성별/나이 입력창 켜기 (러브시그널용),끄기 (기본값처럼 작동)
+              useSafeLabel: true  // "오픈카톡(익명)" 라벨 사용하기  끄기 (또는 안심 라벨이 필요하면 true)
+          },
+
+          colors: { main: "#ff4757", accent: "#ff6b81", bg: "#fff0f3" },
+          text: {
+              mainTitle: "설레는 거리 1km,<br><span>러브 시그널</span>을 켜세요!",
+              inputBtn: "새로운 인연 찾기",
+              statsBtn: "📊 실시간 연애 트렌드",
+              keywordLabel: "어떤 만남을 원하세요?",
+              keywordPlace: "ex. 퇴근 후 치맥, 주말 전시회",
+              typeLabel: "데이트 코스",
+              budgetLabel: "데이트 스타일",
+              timeLabel: "만남 희망 시간",
+              submitBtn: "러브 시그널 송출 💘",
+              statTitle: "지금 이 도시의<br><span>썸 & 연애 트렌드</span>",
+              chartTitle1: "🔥 인기 데이트 Top 5"
+          },
+          options: {
+              type: [ { val: "coffee", label: "☕ 카페/대화" }, { val: "alcohol", label: "🍺 술 한잔" }, { val: "meal", label: "🍝 맛집 식사" }, { val: "activity", label: "🎬 영화/활동" } ],
+              budget: [ { val: "dutch", label: "더치페이" }, { val: "buy_coffee", label: "커피는 제가" }, { val: "buy_meal", label: "식사는 제가" }, { val: "flexible", label: "상호 협의" } ],
+              time: [ { val: "now", label: "지금 당장" }, { val: "tonight", label: "오늘 밤에" }, { val: "weekend", label: "이번 주말" }, { val: "after_work", label: "평일 퇴근 후" } ]
+          }
+      };
+
+      // -----------------------------------------------------------
+      // [2] Firebase 설정 (사장님 키 유지)
+      // -----------------------------------------------------------
+      const firebaseConfig = {
+    apiKey: "AIzaSyB6WjGUEn0fEg_k4Yk15bhzAFDoo7RcqWg",
+    authDomain: "want-log-v2.firebaseapp.com",
+    databaseURL: "https://want-log-v2-default-rtdb.firebaseio.com",
+    projectId: "want-log-v2",
+    storageBucket: "want-log-v2.firebasestorage.app",
+    messagingSenderId: "142800647324",
+    appId: "1:142800647324:web:e3100ec7b4daa8467ae959",
+    measurementId: "G-HZ4HBQH697"
+      
+      if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+      const db = firebase.database();
+      const appRef = db.ref(APP_CONFIG.appName); 
+
+      var timerInterval = null;
+      var myCharts = {};
+      
+      window.onload = function() {
+          applyAppConfig();
+          loadDataFromFirebase();
+      };
+
+      // -----------------------------------------------------------
+      // [4] 설정 적용 함수 (스위치 로직 추가됨)
+      // -----------------------------------------------------------
+      function applyAppConfig() {
+          document.documentElement.style.setProperty('--main-color', APP_CONFIG.colors.main);
+          document.documentElement.style.setProperty('--accent-color', APP_CONFIG.colors.accent);
+          document.documentElement.style.setProperty('--bg-color', APP_CONFIG.colors.bg);
+
+          document.getElementById('ui-main-title').innerHTML = APP_CONFIG.text.mainTitle;
+          document.getElementById('ui-btn-input').innerText = APP_CONFIG.text.inputBtn;
+          document.getElementById('ui-btn-stats').innerText = APP_CONFIG.text.statsBtn;
+          
+          document.getElementById('ui-label-keyword').innerText = APP_CONFIG.text.keywordLabel;
+          document.getElementById('input-keyword').placeholder = APP_CONFIG.text.keywordPlace;
+          document.getElementById('ui-label-type').innerText = APP_CONFIG.text.typeLabel;
+          document.getElementById('ui-label-budget').innerText = APP_CONFIG.text.budgetLabel;
+          document.getElementById('ui-label-time').innerText = APP_CONFIG.text.timeLabel;
+          document.getElementById('ui-btn-submit').innerText = APP_CONFIG.text.submitBtn;
+          document.getElementById('ui-stat-title').innerHTML = APP_CONFIG.text.statTitle;
+          document.getElementById('ui-chart-title-1').innerText = APP_CONFIG.text.chartTitle1;
+
+          // [신규] 기능 스위치 로직
+          if (APP_CONFIG.features && APP_CONFIG.features.useGenderAge) {
+              document.getElementById('row-gender-age').style.display = 'flex'; // 보이기
+          } else {
+              document.getElementById('row-gender-age').style.display = 'none'; // 숨기기
+          }
+
+          if (APP_CONFIG.features && APP_CONFIG.features.useSafeLabel) {
+              document.getElementById('ui-label-contact').innerText = "오픈카톡 (안심 익명 링크)";
+          }
+
+          fillSelect('input-type', APP_CONFIG.options.type);
+          fillSelect('input-budget', APP_CONFIG.options.budget);
+          fillSelect('input-time', APP_CONFIG.options.time);
+      }
+
+      function fillSelect(id, options) {
+          var el = document.getElementById(id);
+          el.innerHTML = '';
+          options.forEach(opt => {
+              var o = document.createElement('option');
+              o.value = opt.val;
+              o.innerText = opt.label;
+              el.appendChild(o);
+          });
+      }
+
+      // -----------------------------------------------------------
+      // [5] Firebase 로직 (성별/나이 필드 추가)
+      // -----------------------------------------------------------
+      function loadDataFromFirebase() {
+          var cloud = document.getElementById('cloud-area');
+          cloud.innerHTML = '<div style="text-align:center;color:#999;width:100%;margin-top:20px;">데이터 스캔 중...</div>';
+          appRef.orderByChild('timestamp').limitToLast(100).once('value').then((snapshot) => {
+              cloud.innerHTML = '';
+              const data = snapshot.val();
+              if(!data) { cloud.innerHTML='<div style="text-align:center; width:100%; color:#ccc;">아직 데이터가 없어요!</div>'; return; }
+              const items = Object.values(data).reverse();
+              const uniqueSet = new Set();
+              items.forEach(item => {
+                  if(item.keyword && !uniqueSet.has(item.keyword) && uniqueSet.size < 20) {
+                      uniqueSet.add(item.keyword);
+                      var t = document.createElement('div'); 
+                      t.className='tag'; 
+                      t.innerText=item.keyword;
+                      t.onclick=function(){ goInput(item.keyword); }; 
+                      cloud.appendChild(t);
+                  }
+              });
+          });
+      }
+
+      function submitData(lat, lng) {
+          document.getElementById('result-msg').innerText = "실시간 서버에 접속 중...";
+          const now = new Date().getTime();
+          
+          // [신규] 성별/나이 데이터 수집
+          let gender = null;
+          let age = null;
+          if (APP_CONFIG.features && APP_CONFIG.features.useGenderAge) {
+              gender = document.getElementById('input-gender').value;
+              age = document.getElementById('input-age').value;
+          }
+
+          const payload = {
+              timestamp: now,
+              keyword: document.getElementById('input-keyword').value,
+              type: document.getElementById('input-type').value,
+              budget: document.getElementById('input-budget').value,
+              validTime: document.getElementById('input-time').value,
+              link: document.getElementById('input-link').value,
+              email: document.getElementById('input-email').value,
+              lat: lat, lng: lng,
+              gender: gender, // 추가됨
+              age: age,       // 추가됨
+              id: 'WANT-' + now + '-' + Math.floor(Math.random()*1000)
+          };
+
+          appRef.push(payload).then(() => {
+              calculateMatching(payload);
+          }).catch((error) => { alert("저장 실패: " + error.message); goHome(); });
+      }
+
+      function calculateMatching(myData) {
+          document.getElementById('result-msg').innerText = "매칭 상대를 찾는 중...";
+          appRef.orderByChild('timestamp').limitToLast(200).once('value').then((snapshot) => {
+              const allData = snapshot.val();
+              const matches = [];
+              let interestCount = 0;
+              const now = new Date().getTime();
+              const STATS_WINDOW_MS = 3 * 60 * 60 * 1000; 
+
+              if(allData) {
+                  Object.values(allData).forEach(row => {
+                      if(row.keyword === myData.keyword && (now - row.timestamp) < STATS_WINDOW_MS) { interestCount++; }
+                      if(row.keyword === myData.keyword && row.link && row.id !== myData.id) {
+                          var durationMap = {"1h": 1, "3h": 3, "6h": 6, "12h": 12, "now": 1, "tonight": 6, "weekend": 24, "after_work": 4}; // 시간 맵핑 보강
+                          var hours = durationMap[row.validTime] || 24;
+                          var expireTime = row.timestamp + (hours * 60 * 60 * 1000);
+                          if(now < expireTime) {
+                              var dist = getDistanceFromLatLonInKm(myData.lat, myData.lng, row.lat, row.lng);
+                              matches.push({
+                                  link: row.link, expireTime: expireTime, type: row.type, budget: row.budget, distance: dist,
+                                  gender: row.gender, age: row.age // 정보 전달
+                              });
+                          }
+                      }
+                  });
+              }
+              renderResults({ interestCount: interestCount, activeRooms: matches });
+          });
+      }
+
+      function loadStats() {
+          showView('view-stats');
+          appRef.orderByChild('timestamp').limitToLast(300).once('value').then((snapshot) => {
+              const data = snapshot.val();
+              if(!data) return;
+              const items = Object.values(data);
+              var keywordCounts = {};
+              var timeCounts = { "Morning(아침)":0, "Lunch(점심)":0, "Afternoon(오후)":0, "Evening(저녁)":0, "Night(심야)":0 };
+              var typeCounts = {}; // 동적 처리
+
+              items.forEach(item => {
+                  if(item.keyword) keywordCounts[item.keyword] = (keywordCounts[item.keyword] || 0) + 1;
+                  if(item.type) typeCounts[item.type] = (typeCounts[item.type] || 0) + 1;
+                  var hour = new Date(item.timestamp).getHours();
+                  var timeBlock = "";
+                  if (hour >= 6 && hour < 11) timeBlock = "Morning(아침)";
+                  else if (hour >= 11 && hour < 14) timeBlock = "Lunch(점심)";
+                  else if (hour >= 14 && hour < 18) timeBlock = "Afternoon(오후)";
+                  else if (hour >= 18 && hour < 22) timeBlock = "Evening(저녁)";
+                  else timeBlock = "Night(심야)";
+                  if(timeBlock) timeCounts[timeBlock]++;
+              });
+
+              var sortedKeywords = Object.entries(keywordCounts).sort((a,b) => b[1]-a[1]).slice(0,5);
+              renderCharts({ topKeywords: sortedKeywords, timeStats: timeCounts, typeStats: typeCounts });
+          });
+      }
+
+      function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+          if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+          var R = 6371; var dLat = deg2rad(lat2-lat1); var dLon = deg2rad(lon2-lon1); 
+          var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+          var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); return R * c;
+      }
+      function deg2rad(deg) { return deg * (Math.PI/180); }
+
+      function showView(id) { document.querySelectorAll('.view').forEach(el => el.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+      function goHome() { if(timerInterval) clearInterval(timerInterval); document.getElementById('input-keyword').value = ''; document.getElementById('input-link').value = ''; document.getElementById('chat-list-area').innerHTML = ''; var c = document.getElementById('result-circle'); c.className = 'circle scanning'; c.innerHTML = '<span style="font-size:20px;">SCAN</span>'; document.getElementById('result-msg').innerText = ''; showView('view-home'); loadDataFromFirebase(); }
+      function goInput(txt) { if(txt) document.getElementById('input-keyword').value = txt; showView('view-input'); }
+      
+      function requestLocationAndSubmit() {
+        var k = document.getElementById('input-keyword').value;
+        if(!k) { alert('키워드를 입력하세요'); return; }
+        showView('view-result');
+        document.getElementById('result-msg').innerText = "위치 정보를 확인 중입니다...";
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function(position) { submitData(position.coords.latitude, position.coords.longitude); },
+            function(error) { console.log("위치 실패", error); submitData(null, null); }
+          );
+        } else { submitData(null, null); }
+      }
+
+      function renderResults(res) {
+          var c = document.getElementById('result-circle');
+          var msg = document.getElementById('result-msg');
+          c.className = 'circle result';
+          c.innerHTML = `<div class="count-group"><div class="count-label">관심있는 이웃</div><div class="count-num">${res.interestCount}</div></div><div class="divider"></div><div class="room-stat">오픈 채팅방 <span>${res.activeRooms.length}</span></div>`;
+          if (res.activeRooms.length > 0) { msg.innerText = "매칭 성공! 대화에 참여해보세요."; createChatButtons(res.activeRooms); } else { msg.innerText = "아직 오픈된 방은 없네요."; }
+      }
+
+      function createChatButtons(matches) {
+          var listArea = document.getElementById('chat-list-area');
+          listArea.innerHTML = '';
+          matches.forEach(function(match, index) {
+              var btn = document.createElement('a');
+              btn.className = 'chat-btn-yellow';
+              btn.href = match.link;
+              btn.target = "_blank";
+              
+              var distText = "거리모름";
+              if (match.distance !== null) {
+                  if (match.distance < 1) distText = Math.round(match.distance * 1000) + "m";
+                  else distText = match.distance.toFixed(1) + "km";
+              }
+              
+              var typeLabel = APP_CONFIG.options.type.find(o => o.val === match.type)?.label || match.type;
+              var budgetLabel = APP_CONFIG.options.budget.find(o => o.val === match.budget)?.label || match.budget;
+
+              // [신규] 성별/나이 정보 표시 (데이터가 있을 때만)
+              var userInfo = "";
+              if (match.gender && match.age) {
+                  var gMap = {"male":"남","female":"여"};
+                  var aMap = {"20s":"20대","30s":"30대","40s":"40대","50s":"50대+"};
+                  userInfo = ` <span style="font-weight:bold; color:#d63031;">[${aMap[match.age]}/${gMap[match.gender]}]</span>`;
+              }
+
+              btn.innerHTML = `
+                <div class="chat-header">
+                    <span style="font-weight:bold;">💬 대화방 입장 (${index+1})</span>
+                    <span class="dist-badge">📍 ${distText}</span>
+                </div>
+                <div class="chat-info-sub">${typeLabel} · ${budgetLabel}${userInfo}</div>
+                <span id="timer-${index}" class="timer-badge">계산중...</span>
+              `;
+              listArea.appendChild(btn);
+          });
+
+          if(timerInterval) clearInterval(timerInterval);
+          timerInterval = setInterval(function() {
+              var now = new Date().getTime();
+              matches.forEach(function(match, index) {
+                  var badge = document.getElementById(`timer-${index}`);
+                  if(badge) {
+                      var diff = match.expireTime - now;
+                      if (diff <= 0) { badge.innerText = "종료됨"; badge.style.background = "#999"; } 
+                      else {
+                          var h = Math.floor(diff / (1000 * 60 * 60));
+                          var m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                          var s = Math.floor((diff % (1000 * 60)) / 1000);
+                          badge.innerText = (h>0 ? h+"시간 " : "") + m + "분 " + s + "초";
+                      }
+                  }
+              });
+          }, 1000);
+      }
+
+      function renderCharts(data) {
+        if(myCharts.keyword) myCharts.keyword.destroy();
+        if(myCharts.time) myCharts.time.destroy();
+        if(myCharts.type) myCharts.type.destroy();
+
+        var ctxKw = document.getElementById('chart-keyword').getContext('2d');
+        myCharts.keyword = new Chart(ctxKw, { type: 'bar', data: { labels: data.topKeywords.map(i => i[0]), datasets: [{ data: data.topKeywords.map(i => i[1]), backgroundColor: APP_CONFIG.colors.main, borderRadius: 8 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision:0 }, grid: { display:false } }, x: { grid: { display:false } } } } });
+
+        var ctxTime = document.getElementById('chart-time').getContext('2d');
+        var timeLabels = ["Morning(아침)", "Lunch(점심)", "Afternoon(오후)", "Evening(저녁)", "Night(심야)"];
+        var simpleTimeLabels = ["아침", "점심", "오후", "저녁", "심야"];
+        myCharts.time = new Chart(ctxTime, { type: 'line', data: { labels: simpleTimeLabels, datasets: [{ data: timeLabels.map(k => data.timeStats[k] || 0), borderColor: APP_CONFIG.colors.accent, backgroundColor: 'rgba(255, 215, 0, 0.1)', fill: true, tension: 0.4 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision:0 } } } } });
+
+        var ctxType = document.getElementById('chart-type').getContext('2d');
+        var typeLabels = APP_CONFIG.options.type.map(o => o.label);
+        var typeVals = APP_CONFIG.options.type.map(o => data.typeStats[o.val] || 0);
+        myCharts.type = new Chart(ctxType, { type: 'doughnut', data: { labels: typeLabels, datasets: [{ data: typeVals, backgroundColor: ['#7c4dff', '#b47cff', '#ffd700', '#ff4081'], borderWidth: 2, borderColor: '#fff' }] }, options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } } }, cutout: '60%' } });
+      }
+    </script>
+  </body>
+</html>
