@@ -88,22 +88,28 @@
         <label id="ui-label-keyword" class="label">키워드</label>
         <input type="text" id="input-keyword" class="input-field" placeholder="">
         
-        <div id="row-gender-age" class="detail-row">
-            <div class="detail-col">
-                <label class="label">성별</label>
-                <select id="input-gender" class="input-field">
-                    <option value="male">남성</option>
-                    <option value="female">여성</option>
-                </select>
+        <div id="row-gender-age" class="detail-row" style="display:none; flex-direction:column; gap:5px;">
+            <div style="display:flex; gap:10px;">
+                <div class="detail-col">
+                    <label class="label">성별</label>
+                    <select id="input-gender" class="input-field">
+                        <option value="male">남성</option>
+                        <option value="female">여성</option>
+                    </select>
+                </div>
+                <div class="detail-col">
+                    <label class="label">연령대</label>
+                    <select id="input-age" class="input-field">
+                        <option value="20s">20대</option>
+                        <option value="30s">30대</option>
+                        <option value="40s">40대</option>
+                        <option value="50s">50대+</option>
+                    </select>
+                </div>
             </div>
-            <div class="detail-col">
-                <label class="label">연령대</label>
-                <select id="input-age" class="input-field">
-                    <option value="20s">20대</option>
-                    <option value="30s">30대</option>
-                    <option value="40s">40대</option>
-                    <option value="50s">50대+</option>
-                </select>
+            <div style="font-size:11px; color:#ff4757; background:#fff0f3; padding:8px; border-radius:6px; margin-bottom:10px; line-height:1.4;">
+                💡 <b>팁:</b> 방을 만들 땐 <b>본인 정보</b>를,<br>
+                상대를 찾을 땐 <b>원하는 이성 정보</b>를 선택하세요.
             </div>
         </div>
 
@@ -200,7 +206,7 @@
       // -----------------------------------------------------------
       // [2] Firebase 설정 (사장님 키 유지)
       // -----------------------------------------------------------
- const firebaseConfig = {
+  const firebaseConfig = {
     apiKey: "AIzaSyB6WjGUEn0fEg_k4Yk15bhzAFDoo7RcqWg",
     authDomain: "want-log-v2.firebaseapp.com",
     databaseURL: "https://want-log-v2-default-rtdb.firebaseio.com",
@@ -494,5 +500,4 @@
       }
     </script>
   </body>
-
 </html>
