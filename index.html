@@ -26,19 +26,19 @@
       .detail-row { display: flex; gap: 10px; margin-bottom: 5px; }
       .detail-col { flex: 1; }
 
-/* [신규] 로고(이미지) 및 풋터 스타일 (수정완료) */
+/* [로고 스타일 수정: 사이즈 축소 & 여백 제거] */
       .brand-header { 
-          text-align: center; 
-          margin-top: 20px; 
-          margin-bottom: 5px; /* 오타수정: 5x -> 5px */
+          text-align: center;  /* 가운데 정렬 (추천!) */
+          margin-top: 10px;    /* 상단 여백 최소화 (상태바와 안 겹칠 정도만) */
+          margin-bottom: 0px;  /* 하단 여백 완전 제거 */
+          line-height: 1;      /* 줄 간격으로 인한 미세한 여백도 제거 */
       }
       
-      /* 로고 이미지 크기 제어 (높이 70px 고정) */
-      /* [로고 이미지 스타일 - 배경 제거 마법 추가] */
       .brand-header img {
-          height: 70px;        
-          width: auto;
+          height: 50px;        /* 70px -> 50px로 축소 (70% 크기) */
+          width: auto;         /* 비율 자동 유지 */
           display: inline-block;
+      }
           
           /* ★ 핵심: 배경이 있는 이미지도 글씨만 남기고 투명하게 만듦 ★ */
           mix-blend-mode: multiply; 
@@ -549,3 +549,4 @@
     </script>
   </body>
 </html>
+
